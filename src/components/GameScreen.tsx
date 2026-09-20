@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Game, Result, Settings, VIEW_H, VIEW_W } from "../game/engine";
 import { PixelButton } from "./ui";
+import TouchControls, { isTouchDevice } from "./TouchControls";
 
 type Props = { settings: Settings; onExit: () => void };
 
@@ -10,6 +11,7 @@ export default function GameScreen({ settings, onExit }: Props) {
   const [paused, setPaused] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [round, setRound] = useState(0);
+  const [touch] = useState(isTouchDevice);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,6 +39,14 @@ export default function GameScreen({ settings, onExit }: Props) {
     gameRef.current?.setPaused(paused);
   }, [paused]);
 
+  useEffect(() => {
+    if (paused || result) {
+      gameRef.current?.setAttack(false);
+      gameRef.current?.setMove(0, 0);
+      gameRef.current?.setSneak(false);
+    }
+  }, [paused, result]);
+
   const restart = () => {
     setResult(null);
     setPaused(false);
@@ -52,8 +62,16 @@ export default function GameScreen({ settings, onExit }: Props) {
           height={VIEW_H}
           onMouseDown={() => gameRef.current?.wakeAudio()}
           className="pixelated block w-full cursor-crosshair border-4 border-[#0a0f0a] bg-[#4e9e3e]"
-          style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+          style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}`, touchAction: "none" }}
         />
+
+        {touch && !result && !paused && (
+          <TouchControls
+            onMove={(x, y) => gameRef.current?.setMove(x, y)}
+            onAttack={(v) => gameRef.current?.setAttack(v)}
+            onSneak={(v) => gameRef.current?.setSneak(v)}
+          />
+        )}
 
         {paused && !result && (
           <Overlay>
